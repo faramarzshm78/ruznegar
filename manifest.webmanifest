@@ -1,0 +1,21 @@
+{
+  "id": "./",
+  "name": "روزنگار — برنامه‌ریز من",
+  "short_name": "روزنگار",
+  "description": "برنامه‌ریز شخصی: تسک‌ها، تقویم، عادت‌ها، تمرکز، ژورنال و مالی",
+  "lang": "fa",
+  "dir": "rtl",
+  "start_url": "./?source=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d0b24",
+  "theme_color": "#0d0b24",
+  "categories": ["productivity", "lifestyle", "finance"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

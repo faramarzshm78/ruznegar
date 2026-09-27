@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>ضبط صدا — روزنگار</title>
+  <meta name="theme-color" content="#0d0b24">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="site.css">
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js" async></script>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="rec" id="ui">
+        <h2 style="justify-content:center">🎙 ضبط صدا برای روزنگار</h2>
+        <div class="ring" id="ring"><button class="mic" id="mic" aria-label="شروع ضبط"><svg viewBox="0 0 24 24" id="mic-ic"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button></div>
+        <div class="timer" id="t">00:00</div>
+        <div id="msg">برای شروع ضبط روی میکروفون بزن. به هر زبانی حرف بزن؛ خودکار تشخیص داده می‌شود (حداکثر ۳ دقیقه).</div>
+        <div class="bar hide" id="bar"><i id="barv"></i></div>
+        <button class="btn ghost hide" id="again">ضبط دوباره</button>
+      </div>
+    </div>
+    <p class="muted center" style="margin-top:12px">صدا فقط برای تبدیل به متن فرستاده می‌شود و بعد از ۱۵ دقیقه پاک می‌شود.</p>
+  </div>
+  <script>
+    (function () {
+      var $ = function (id) { return document.getElementById(id); };
+      var token = (location.hash.match(/t=([a-f0-9]{32})/) || [])[1];
+      var ua = navigator.userAgent || '';
+      var isIOS = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      var st = 'idle', stream, ctx, proc, src, pcm = [], rate = 16000, t0 = 0, tick = 0, MAX = 180;
+      var say = function (h, cls) { $('msg').innerHTML = h; $('msg').className = cls || ''; };
+      if (!token) { say('این صفحه از داخل روزنگار باز می‌شود: در یادداشت، ژورنال یا دستیار روی 🎤 بزن.', 'bad'); $('mic').disabled = true; return; }
+
+      function permHelp() {
+        if (isIOS) return 'در iPhone: <b>Settings ← Safari ← Microphone</b> را روی <b>Ask</b> یا <b>Allow</b> بگذار (یا در Safari روی «aA» کنار آدرس ← Website Settings ← Microphone ← Allow) و صفحه را دوباره باز کن.';
+        if (/Android/.test(ua)) return 'در Chrome روی 🔒 یا ⓘ کنار آدرس بزن ← <b>Permissions / مجوزها</b> ← <b>Microphone</b> ← <b>Allow</b>. اگر باز هم نشد: تنظیمات گوشی ← برنامه‌ها ← Chrome ← مجوزها ← میکروفون ← اجازه.';
+        return 'روی 🔒 کنار آدرس بزن و اجازه‌ی Microphone را روشن کن، بعد صفحه را تازه کن.';
+      }
+
+      function start() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { say('این مرورگر ضبط صدا را پشتیبانی نمی‌کند. صفحه را در Chrome یا Safari باز کن.', 'bad'); return; }
+        navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }).then(function (s) {
+          stream = s;
+          var C = window.AudioContext || window.webkitAudioContext;
+          ctx = new C();
+          src = ctx.createMediaStreamSource(s);
+          proc = ctx.createScriptProcessor(4096, 1, 1);
+          var ratio = ctx.sampleRate / rate;
+          pcm = [];
+          proc.onaudioprocess = function (e) {
+            if (st !== 'rec') return;
+            var d = e.inputBuffer.getChannelData(0), n = Math.floor(d.length / ratio), out = new Int16Array(n), peak = 0;
+            for (var i = 0; i < n; i++) { var v = d[Math.floor(i * ratio)]; peak = Math.max(peak, Math.abs(v)); v = Math.max(-1, Math.min(1, v)); out[i] = v < 0 ? v * 0x8000 : v * 0x7fff; }
+            pcm.push(out);
+            $('ring').style.setProperty('--lv', Math.min(1, peak * 2.2).toFixed(2));
+          };
+          src.connect(proc); proc.connect(ctx.destination);
+          st = 'rec'; t0 = Date.now();
+          $('mic').classList.add('on'); $('ring').classList.add('on');
+          $('mic-ic').innerHTML = '<rect x="7" y="7" width="10" height="10" rx="2"/>';
+          say('در حال ضبط… حرف بزن و برای پایان دوباره روی دکمه بزن.');
+          tick = setInterval(function () {
+            var sec = Math.floor((Date.now() - t0) / 1000);
+            $('t').textContent = String(Math.floor(sec / 60)).padStart(2, '0') + ':' + String(sec % 60).padStart(2, '0');
+            if (sec >= MAX) stop();
+          }, 250);
+        }).catch(function (e) {
+          var denied = e && (e.name === 'NotAllowedError' || e.name === 'SecurityError');
+          say(denied ? '⛔ اجازه‌ی میکروفون داده نشد.<br><span class="muted">' + permHelp() + '</span>' : '⚠️ میکروفون در دسترس نیست: ' + (e && e.message || e), 'bad');
+        });
+      }
+
+      function stop() {
+        if (st !== 'rec') return;
+        st = 'send';
+        clearInterval(tick);
+        try { proc.disconnect(); src.disconnect(); ctx.close(); } catch (e) { }
+        stream.getTracks().forEach(function (t) { t.stop(); });
+        $('mic').classList.remove('on'); $('ring').classList.remove('on'); $('ring').style.setProperty('--lv', 0);
+        $('mic').disabled = true;
+        if (Date.now() - t0 < 800) { reset('ضبط خیلی کوتاه بود؛ دوباره امتحان کن.'); return; }
+        say('در حال آماده‌سازی…');
+        setTimeout(function () { encodeAndSend(); }, 30);
+      }
+
+      function encode() {
+        var total = pcm.reduce(function (a, b) { return a + b.length; }, 0);
+        var all = new Int16Array(total), o = 0;
+        pcm.forEach(function (b) { all.set(b, o); o += b.length; });
+        if (window.lamejs) {
+          try {
+            var enc = new lamejs.Mp3Encoder(1, rate, 32), parts = [];
+            for (var i = 0; i < all.length; i += 1152) { var buf = enc.encodeBuffer(all.subarray(i, i + 1152)); if (buf.length) parts.push(new Uint8Array(buf)); }
+            var end = enc.flush(); if (end.length) parts.push(new Uint8Array(end));
+            return { mime: 'audio/mpeg', bytes: concat(parts) };
+          } catch (e) { }
+        }
+        // بدون mp3: WAV
+        var len = all.length * 2, b = new ArrayBuffer(44 + len), v = new DataView(b);
+        var w = function (p, s) { for (var i = 0; i < s.length; i++) v.setUint8(p + i, s.charCodeAt(i)); };
+        w(0, 'RIFF'); v.setUint32(4, 36 + len, true); w(8, 'WAVE'); w(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+        v.setUint32(24, rate, true); v.setUint32(28, rate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, len, true);
+        new Int16Array(b, 44).set(all);
+        return { mime: 'audio/wav', bytes: new Uint8Array(b) };
+      }
+      function concat(parts) { var n = parts.reduce(function (a, p) { return a + p.length; }, 0), out = new Uint8Array(n), o = 0; parts.forEach(function (p) { out.set(p, o); o += p.length; }); return out; }
+      function b64(bytes) { var s = '', CH = 0x8000; for (var i = 0; i < bytes.length; i += CH) s += String.fromCharCode.apply(null, bytes.subarray(i, i + CH)); return btoa(s); }
+      function post(obj) {
+        return fetch(RZ.relay + '?a=vput', { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(obj) });
+      }
+
+      function encodeAndSend() {
+        var a = encode();
+        var data = b64(a.bytes), SZ = 90000, n = Math.ceil(data.length / SZ);
+        if (n > 80) { reset('صدا خیلی طولانی است؛ کوتاه‌تر ضبط کن.'); return; }
+        $('bar').classList.remove('hide');
+        say('در حال فرستادن برای روزنگار…');
+        var i = 0;
+        (function next() {
+          if (i >= n) {
+            post({ t: token, done: true, n: n, mime: a.mime }).then(function () {
+              $('barv').style.width = '100%';
+              say('✅ فرستاده شد! به روزنگار برگرد؛ متن تا چند ثانیه‌ی دیگر آماده می‌شود.', 'ok');
+              setTimeout(function () { try { window.close(); } catch (e) { } }, 1500);
+            }).catch(fail);
+            return;
+          }
+          post({ t: token, i: i, d: data.slice(i * SZ, (i + 1) * SZ) }).then(function () { i++; $('barv').style.width = Math.round(i / (n + 1) * 100) + '%'; next(); }).catch(fail);
+        })();
+      }
+      function fail() { reset('⚠️ ارسال انجام نشد؛ اتصال اینترنت را بررسی کن و دوباره ضبط کن.'); }
+      function reset(m) { st = 'idle'; $('mic').disabled = false; $('mic-ic').innerHTML = '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>'; $('t').textContent = '00:00'; $('bar').classList.add('hide'); say(m, 'bad'); }
+
+      $('mic').addEventListener('click', function () { if (st === 'idle') start(); else if (st === 'rec') stop(); });
+      $('again').addEventListener('click', function () { $('again').classList.add('hide'); $('barv').style.width = '0'; reset('برای شروع ضبط روی میکروفون بزن.'); $('msg').className = ''; });
+    })();
+  </script>
+</body>
+</html>
