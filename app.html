@@ -39,6 +39,7 @@
       if (!chromium) { location.replace(direct); return; }
       var LS = function (k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } };
       // اگر در این گوشی قاب کار نکرده (مثلاً Chrome کوکی‌های گوگل را داخل قاب مسدود می‌کند)، تا ۳ روز مستقیم باز کن
+      if (/[?&]retry=1/.test(location.search)) LS('rz_embed_fail', null);
       if (Date.now() - (+LS('rz_embed_fail') || 0) < 3 * 86400000) { location.replace(direct); return; }
       var ready = false, wait = document.getElementById('wait'), frame = document.getElementById('app'), t0 = Date.now();
       var fallback = function (remember) { if (ready) return; if (remember) LS('rz_embed_fail', String(Date.now())); location.replace(direct); };
