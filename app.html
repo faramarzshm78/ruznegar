@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>روزنگار</title>
+  <meta name="theme-color" content="#f7f5ff" id="tc">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="روزنگار">
+  <script src="config.js"></script>
+  <style>
+    html, body { margin: 0; height: 100%; background: #f7f5ff; overflow: hidden; }
+    #app { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; display: block; background: transparent; }
+    #wait { position: fixed; inset: 0; display: grid; place-items: center; background: #f7f5ff; transition: opacity .35s; font-family: Vazirmatn, system-ui, sans-serif; color: #4c4775; text-align: center; }
+    #wait img { width: 88px; height: 88px; border-radius: 24px; animation: p 1.4s ease-in-out infinite; }
+    #wait p { font-size: 14px; margin: 16px 0 0; }
+    #wait a { display: none; margin-top: 14px; color: #7c3aed; font-weight: 700; text-decoration: none; font-size: 14px; }
+    #wait.slow a { display: inline-block; }
+    @keyframes p { 50% { transform: scale(.94); opacity: .8; } }
+  </style>
+</head>
+<body>
+  <iframe id="app" title="روزنگار" allow="clipboard-read; clipboard-write; fullscreen; web-share"></iframe>
+  <div id="wait"><div><img src="icon-192.png" alt=""><p>روزنگار در حال باز شدن…</p><a id="direct" href="#">باز کردن مستقیم</a></div></div>
+  <script>
+    /*
+     * روزنگار داخل این صفحه (بدون نوار هشدار گوگل) نمایش داده می‌شود.
+     * اگر تا چند ثانیه اپ خبر «آماده» نداد (مثلاً ورود گوگل در این مرورگر نیست)، مستقیم به نشانی اصلی می‌رویم.
+     */
+    (function () {
+      var direct = RZ.app + (RZ.app.indexOf('?') < 0 ? '?' : '&') + 'src=pwa';
+      var ua = navigator.userAgent || '';
+      var isIOS = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      // Safari و Firefox کوکی‌های گوگل را داخل قاب نمی‌فرستند؛ فقط در مرورگرهای Chromium داخل قاب باز کن
+      var chromium = !isIOS && (!!window.chrome || /Chrome|Chromium|Edg|SamsungBrowser/.test(ua)) && !/Firefox|FxiOS/.test(ua);
+      if (!chromium) { location.replace(direct); return; }
+      var ready = false, wait = document.getElementById('wait');
+      document.getElementById('direct').href = direct;
+      window.addEventListener('message', function (e) {
+        if (!/^https:\/\/[a-z0-9-]+-script\.googleusercontent\.com$|^https:\/\/script\.google\.com$/.test(e.origin)) return;
+        var d = e.data || {};
+        if (d.rz === 'ready' && !ready) { ready = true; wait.style.opacity = 0; setTimeout(function () { wait.style.display = 'none'; }, 400); }
+        if (d.rz === 'theme' && /^#[0-9a-f]{6}$/i.test(d.bg || '')) { document.getElementById('tc').content = d.bg; document.body.style.background = d.bg; }
+      });
+      setTimeout(function () { if (!ready) wait.className = 'slow'; }, 7000);
+      setTimeout(function () { if (!ready) location.replace(direct); }, 20000);
+      document.getElementById('app').src = direct;
+    })();
+  </script>
+</body>
+</html>

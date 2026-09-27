@@ -72,7 +72,12 @@
       var isAndroid = /Android/.test(ua);
       var standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
       // src=pwa به اپ می‌گوید از نسخه‌ی نصب‌شده باز شده تا راهنمای نصب را نشان ندهد
-      var go = function (installed) { location.replace(installed ? RZ.app + (RZ.app.indexOf('?') < 0 ? '?' : '&') + 'src=pwa' : RZ.app); };
+      // اندروید و کامپیوتر: داخل app.html (بدون نوار هشدار گوگل)؛ آیفون: مستقیم (Safari ورود گوگل را داخل قاب نمی‌پذیرد)
+      var go = function (installed) {
+        var chromium = !isIOS && (!!window.chrome || /Chrome|Chromium|Edg|SamsungBrowser/.test(ua)) && !/Firefox/.test(ua);
+        if (chromium) { location.replace('app.html'); return; }
+        location.replace(installed ? RZ.app + (RZ.app.indexOf('?') < 0 ? '?' : '&') + 'src=pwa' : RZ.app);
+      };
       var $ = function (id) { return document.getElementById(id); };
 
       if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () { });
