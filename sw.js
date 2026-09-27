@@ -1,5 +1,5 @@
 /* روزنگار — سرویس‌ورکر سایت همراه: پوسته را کش می‌کند تا نصب و باز شدن سریع باشد */
-const CACHE = 'rz-shell-v1';
+const CACHE = 'rz-shell-v2';
 const SHELL = ['./', './index.html', './site.css', './config.js', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
