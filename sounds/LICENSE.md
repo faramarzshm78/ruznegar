@@ -13,7 +13,5 @@
 | `wind.mp3` | [Wind](https://freesound.org/people/felix.blume/sounds/217506/) | felix.blume | Porrumentzio | CC0 |
 | `forest.mp3` | [Birds](https://freesound.org/people/kvgarlic/sounds/156826/) | kvgarlic | Porrumentzio | CC0 |
 | `night.mp3` | [Crickets Chirping At Night](https://soundbible.com/2083-Crickets-Chirping-At-Night.html) | Lisa Redfern | — | Public Domain |
-| `fire.mp3` | [Fireplace](https://soundbible.com/1543-Fireplace.html) | ezwa | — | Public Domain |
-| `cafe.mp3` | [Restaurant Ambiance](https://soundbible.com/1664-Restaurant-Ambiance.html) | stephan | — | Public Domain |
 
-نویزهای سفید، صورتی و قهوه‌ای و ضرب‌های دوگوشی (binaural) فایل ندارند و در خود مرورگر ساخته می‌شوند.
+ضرب‌های دوگوشی (binaural) فایل ندارند و در خود مرورگر ساخته می‌شوند. موسیقی‌ها: [music/LICENSE.md](../music/LICENSE.md)
